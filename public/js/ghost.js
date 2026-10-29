@@ -23,7 +23,7 @@ class Ghost {
   reset() {
     this.x = this.startCol * TILE_SIZE;
     this.y = this.startRow * TILE_SIZE;
-    this.speed = 1.5;
+    this.speed = 2.0; // 2.0 divides TILE_SIZE (16) perfectly
     this.dir = DIR_UP;
     this.state = this.houseTimer > 0 ? STATE_HOUSE : STATE_SCATTER;
     this.timer = this.houseTimer;
@@ -95,7 +95,7 @@ class Ghost {
     if (this.state === STATE_HOUSE) {
       this.timer--;
       if (this.timer <= 0) {
-        this.x = 13.5 * TILE_SIZE;
+        this.x = 13 * TILE_SIZE;
         this.y = 11 * TILE_SIZE;
         this.state = globalMode;
         this.dir = DIR_LEFT;
@@ -112,20 +112,16 @@ class Ghost {
       this.state = globalMode;
     }
 
+    const curSpeed = this.state === STATE_FRIGHTENED ? 1.0 : (this.state === STATE_EATEN ? 4.0 : this.speed);
+
     // Alignment check to decide tile turn
-    const isAtTileCenter = (Math.abs((this.x + 8) % TILE_SIZE - 8) < this.speed) &&
-                          (Math.abs((this.y + 8) % TILE_SIZE - 8) < this.speed);
+    const isAtTileCenter = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
 
     if (isAtTileCenter) {
-      // Snap to exact center
-      this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
-      this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
-
       if (this.state === STATE_EATEN) {
         const myTile = this.getTile();
         if (myTile.col === 13 && (myTile.row === 11 || myTile.row === 12)) {
           this.state = globalMode;
-          this.speed = 1.5;
         }
       }
 
@@ -156,7 +152,6 @@ class Ghost {
     }
 
     // Move
-    const curSpeed = this.state === STATE_FRIGHTENED ? 1.0 : (this.state === STATE_EATEN ? 3.0 : this.speed);
     this.x += this.dir.x * curSpeed;
     this.y += this.dir.y * curSpeed;
 

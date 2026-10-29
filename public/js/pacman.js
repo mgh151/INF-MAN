@@ -1,4 +1,4 @@
-// Pac-Man Entity Class
+// Pac-Man Entity Class with Precise Tile Grid & Bounding Box Collision
 const DIR_UP = { x: 0, y: -1, angle: 1.5 * Math.PI };
 const DIR_DOWN = { x: 0, y: 1, angle: 0.5 * Math.PI };
 const DIR_LEFT = { x: -1, y: 0, angle: Math.PI };
@@ -10,9 +10,9 @@ class PacMan {
   }
 
   reset() {
-    this.x = 13.5 * TILE_SIZE; // Tile (13, 23) spawn
+    this.x = 13 * TILE_SIZE; // Tile (13, 23)
     this.y = 23 * TILE_SIZE;
-    this.speed = 2; // Pixels per frame
+    this.speed = 2; // Pixels per frame (2 divides 16 evenly)
     this.dir = DIR_LEFT;
     this.nextDir = DIR_LEFT;
     this.mouthAngle = 0.2;
@@ -26,38 +26,71 @@ class PacMan {
     this.nextDir = dir;
   }
 
-  canMove(dir, map) {
-    const nextX = this.x + dir.x * this.speed;
-    const nextY = this.y + dir.y * this.speed;
+  // Check if a 16x16 bounding box at position (x, y) collides with any walls
+  isValidPosition(x, y, map) {
+    const padding = 1; // 1px inside boundary
+    const corners = [
+      { x: x + padding, y: y + padding },
+      { x: x + TILE_SIZE - 1 - padding, y: y + padding },
+      { x: x + padding, y: y + TILE_SIZE - 1 - padding },
+      { x: x + TILE_SIZE - 1 - padding, y: y + TILE_SIZE - 1 - padding }
+    ];
 
-    // Center check
-    const col = Math.floor((nextX + 8) / TILE_SIZE);
-    const row = Math.floor((nextY + 8) / TILE_SIZE);
+    for (const p of corners) {
+      const col = Math.floor(p.x / TILE_SIZE);
+      const row = Math.floor(p.y / TILE_SIZE);
 
-    // Tunnel wrap check
-    if (col < 0 || col >= MAP_COLS) return true;
+      // Allow tunnel wrap
+      if (col < 0 || col >= MAP_COLS) continue;
+      if (row < 0 || row >= MAP_ROWS) return false;
 
-    // Corner alignment check
-    if (dir.x !== 0 && Math.abs((this.y) % TILE_SIZE) > 4) return false;
-    if (dir.y !== 0 && Math.abs((this.x) % TILE_SIZE) > 4) return false;
-
-    return !map.isWall(col, row) && !map.isGhostHouseDoor(col, row);
+      if (map.isWall(col, row) || map.isGhostHouseDoor(col, row)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   update(map) {
     if (!this.alive) return;
 
-    // Try changing to requested next direction if possible
-    if (this.nextDir !== this.dir && this.canMove(this.nextDir, map)) {
-      // Align to tile grid when turning
-      if (this.nextDir.x !== 0) this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
-      if (this.nextDir.y !== 0) this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
-      this.dir = this.nextDir;
+    // 1. Try turning to buffered nextDir
+    if (this.nextDir !== this.dir) {
+      // Reversing direction (180 deg) is always allowed immediately
+      if (this.dir.x === -this.nextDir.x && this.dir.y === -this.nextDir.y) {
+        this.dir = this.nextDir;
+      } else {
+        // Perpendicular turn: check if aligned to corner intersection and path is open
+        const cornerTolerance = 6;
+        if (this.nextDir.y !== 0) {
+          // Turning UP/DOWN: check alignment on X axis
+          const snappedX = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
+          if (Math.abs(this.x - snappedX) <= cornerTolerance) {
+            if (this.isValidPosition(snappedX, this.y + this.nextDir.y * this.speed, map)) {
+              this.x = snappedX;
+              this.dir = this.nextDir;
+            }
+          }
+        } else if (this.nextDir.x !== 0) {
+          // Turning LEFT/RIGHT: check alignment on Y axis
+          const snappedY = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
+          if (Math.abs(this.y - snappedY) <= cornerTolerance) {
+            if (this.isValidPosition(this.x + this.nextDir.x * this.speed, snappedY, map)) {
+              this.y = snappedY;
+              this.dir = this.nextDir;
+            }
+          }
+        }
+      }
     }
 
-    if (this.canMove(this.dir, map)) {
-      this.x += this.dir.x * this.speed;
-      this.y += this.dir.y * this.speed;
+    // 2. Move in current direction if clear
+    const nextX = this.x + this.dir.x * this.speed;
+    const nextY = this.y + this.dir.y * this.speed;
+
+    if (this.isValidPosition(nextX, nextY, map)) {
+      this.x = nextX;
+      this.y = nextY;
 
       // Tunnel wrapping
       if (this.x < -8) this.x = (MAP_COLS - 1) * TILE_SIZE;
@@ -68,6 +101,10 @@ class PacMan {
       if (this.mouthAngle >= this.mouthMax || this.mouthAngle <= this.mouthMin) {
         this.mouthSpeed = -this.mouthSpeed;
       }
+    } else {
+      // Wall ahead: snap to nearest tile boundary to sit flush against wall without clipping
+      if (this.dir.x !== 0) this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
+      if (this.dir.y !== 0) this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
     }
   }
 

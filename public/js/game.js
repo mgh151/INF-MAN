@@ -16,10 +16,10 @@ class Game {
     this.fruit = new Fruit();
 
     this.ghosts = [
-      new Ghost(GHOST_BLINKY, 13.5, 11, { col: 25, row: -2 }, 0),
-      new Ghost(GHOST_PINKY, 13.5, 14, { col: 2, row: -2 }, 120),
-      new Ghost(GHOST_INKY, 11.5, 14, { col: 27, row: 31 }, 240),
-      new Ghost(GHOST_CLYDE, 15.5, 14, { col: 0, row: 31 }, 360)
+      new Ghost(GHOST_BLINKY, 13, 11, { col: 25, row: -2 }, 0),
+      new Ghost(GHOST_PINKY, 13, 14, { col: 2, row: -2 }, 120),
+      new Ghost(GHOST_INKY, 11, 14, { col: 27, row: 31 }, 240),
+      new Ghost(GHOST_CLYDE, 15, 14, { col: 0, row: 31 }, 360)
     ];
 
     this.ghostEatMultiplier = 1;
