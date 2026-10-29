@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INF-MAN - 2D Custom Pac-Man Arcade</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="arcade-container">
+    <header class="arcade-header">
+      <h1 class="logo">INF-MAN</h1>
+      <p class="subtitle">Customizable 2D Pac-Man Arcade</p>
+    </header>
+
+    <div class="scoreboard">
+      <div class="score-box">
+        <span class="label">1UP</span>
+        <span id="score-val" class="value">00</span>
+      </div>
+      <div class="score-box">
+        <span class="label">HIGH SCORE</span>
+        <span id="highscore-val" class="value">00</span>
+      </div>
+      <div class="score-box">
+        <span class="label">LEVEL</span>
+        <span id="level-val" class="value">1</span>
+      </div>
+    </div>
+
+    <div class="game-wrapper">
+      <canvas id="gameCanvas" width="448" height="496"></canvas>
+      
+      <div id="overlay" class="overlay">
+        <div id="overlay-title" class="overlay-title">PRESS START</div>
+        <div id="overlay-sub" class="overlay-sub">Use Arrow Keys or WASD to Move</div>
+        <button id="btn-start" class="btn btn-primary">START GAME</button>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <div class="lives-container" id="lives-container">
+        <!-- Life icons dynamically rendered here -->
+      </div>
+      <div class="fruit-container" id="fruit-container">
+        <!-- Fruit indicators rendered here -->
+      </div>
+    </div>
+
+    <div class="controls-panel">
+      <button id="btn-pause" class="btn btn-secondary">PAUSE</button>
+      <button id="btn-sound" class="btn btn-secondary">SOUND: ON</button>
+      <button id="btn-customize" class="btn btn-accent">CUSTOM IMAGES 🎨</button>
+    </div>
+
+    <!-- Custom Image Settings Modal -->
+    <div id="custom-modal" class="modal">
+      <div class="modal-content">
+        <span id="modal-close" class="close-btn">&times;</span>
+        <h2>Custom Character & Fruit Images</h2>
+        <p class="modal-desc">Upload custom PNG/JPG/SVG images for Pac-Man, Ghosts, and Fruits. Transparent backgrounds recommended!</p>
+        
+        <div class="custom-grid">
+          <div class="custom-item">
+            <label>Pac-Man Custom Image</label>
+            <div class="preview-box">
+              <img id="preview-pacman" alt="Pacman Preview">
+            </div>
+            <input type="file" id="file-pacman" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('pacman')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Ghost 1: Blinky (Red)</label>
+            <div class="preview-box">
+              <img id="preview-blinky" alt="Blinky Preview">
+            </div>
+            <input type="file" id="file-blinky" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('blinky')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Ghost 2: Pinky (Pink)</label>
+            <div class="preview-box">
+              <img id="preview-pinky" alt="Pinky Preview">
+            </div>
+            <input type="file" id="file-pinky" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('pinky')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Ghost 3: Inky (Cyan)</label>
+            <div class="preview-box">
+              <img id="preview-inky" alt="Inky Preview">
+            </div>
+            <input type="file" id="file-inky" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('inky')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Ghost 4: Clyde (Orange)</label>
+            <div class="preview-box">
+              <img id="preview-clyde" alt="Clyde Preview">
+            </div>
+            <input type="file" id="file-clyde" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('clyde')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Frightened Ghost (Scared)</label>
+            <div class="preview-box">
+              <img id="preview-frightened" alt="Frightened Preview">
+            </div>
+            <input type="file" id="file-frightened" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('frightened')">Reset Default</button>
+          </div>
+
+          <div class="custom-item">
+            <label>Custom Fruit Image</label>
+            <div class="preview-box">
+              <img id="preview-fruit" alt="Fruit Preview">
+            </div>
+            <input type="file" id="file-fruit" accept="image/*">
+            <button class="btn-clear" onclick="clearCustomAsset('fruit')">Reset Default</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-reset-all" class="btn btn-secondary">RESET ALL TO DEFAULTS</button>
+          <button id="btn-save-modal" class="btn btn-primary">APPLY & CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/audio.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/pacman.js"></script>
+  <script src="js/ghost.js"></script>
+  <script src="js/fruit.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
