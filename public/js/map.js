@@ -67,10 +67,6 @@ class GameMap {
   }
 
   draw(ctx, pelletPulse) {
-    ctx.fillStyle = '#0000ff';
-    ctx.strokeStyle = '#2121ff';
-    ctx.lineWidth = 2;
-
     for (let r = 0; r < MAP_ROWS; r++) {
       for (let c = 0; c < MAP_COLS; c++) {
         const tile = this.grid[r][c];
@@ -78,6 +74,7 @@ class GameMap {
         const y = r * TILE_SIZE;
 
         if (tile === 1) {
+          ctx.fillStyle = '#0000ff';
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         } else if (tile === 2) {
           // Dot
