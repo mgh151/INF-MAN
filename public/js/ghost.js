@@ -154,7 +154,10 @@ class Ghost {
       this.state = globalMode;
     }
 
-    const curSpeed = this.speed; // Uniform speed on grid
+    let curSpeed = this.speed;
+    if (this.state === STATE_FRIGHTENED) {
+      curSpeed = 1.0; // Half speed (1.0px vs Pac-Man's 2.0px)
+    }
 
     // Decision logic at tile intersection center
     const isAtTileCenter = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
