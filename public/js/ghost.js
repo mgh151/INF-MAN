@@ -23,7 +23,7 @@ class Ghost {
   reset() {
     this.x = this.startCol * TILE_SIZE;
     this.y = this.startRow * TILE_SIZE;
-    this.speed = 2.0; // 2.0 divides TILE_SIZE (16) perfectly
+    this.speed = 2.0; // Standard speed matching 16px tile grid
     this.dir = DIR_UP;
     this.state = this.houseTimer > 0 ? STATE_HOUSE : STATE_SCATTER;
     this.timer = this.houseTimer;
@@ -34,7 +34,7 @@ class Ghost {
     if (this.state !== STATE_EATEN && this.state !== STATE_HOUSE) {
       this.state = STATE_FRIGHTENED;
       this.frightenedTimer = duration;
-      // Reverse direction on frightened
+      // Reverse direction when entering frightened state
       this.dir = { x: -this.dir.x, y: -this.dir.y, angle: (this.dir.angle + Math.PI) % (Math.PI * 2) };
     }
   }
@@ -72,23 +72,65 @@ class Ghost {
     return pacTile;
   }
 
-  getValidDirections(map) {
-    const directions = [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT];
-    const myTile = this.getTile();
+  // Bounding box collision helper for ghosts
+  isValidGhostPosition(x, y, map) {
+    const padding = 1;
+    const corners = [
+      { x: x + padding, y: y + padding },
+      { x: x + TILE_SIZE - 1 - padding, y: y + padding },
+      { x: x + padding, y: y + TILE_SIZE - 1 - padding },
+      { x: x + TILE_SIZE - 1 - padding, y: y + TILE_SIZE - 1 - padding }
+    ];
 
-    return directions.filter(d => {
-      // Don't allow 180 turn unless required
-      if (d.x === -this.dir.x && d.y === -this.dir.y) return false;
+    for (const p of corners) {
+      const col = Math.floor(p.x / TILE_SIZE);
+      const row = Math.floor(p.y / TILE_SIZE);
 
-      const nextCol = myTile.col + d.x;
-      const nextRow = myTile.row + d.y;
+      if (col < 0 || col >= MAP_COLS) continue; // tunnel
+      if (row < 0 || row >= MAP_ROWS) return false;
 
       if (this.state === STATE_EATEN || this.state === STATE_HOUSE) {
-        if (map.isGhostHouseDoor(nextCol, nextRow) || map.grid[nextRow]?.[nextCol] === 5) return true;
+        if (map.isGhostHouseDoor(col, row) || map.grid[row]?.[col] === 5) continue;
       }
 
-      return !map.isWall(nextCol, nextRow) && !map.isGhostHouseDoor(nextCol, nextRow);
+      if (map.isWall(col, row) || map.isGhostHouseDoor(col, row)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getValidDirections(map) {
+    const directions = [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT];
+    const curTile = this.getTile();
+
+    const allowed = directions.filter(d => {
+      // Avoid 180-degree turn unless dead-end
+      if (d.x === -this.dir.x && d.y === -this.dir.y) return false;
+
+      const checkCol = curTile.col + d.x;
+      const checkRow = curTile.row + d.y;
+
+      if (this.state === STATE_EATEN || this.state === STATE_HOUSE) {
+        if (map.isGhostHouseDoor(checkCol, checkRow) || map.grid[checkRow]?.[checkCol] === 5) return true;
+      }
+
+      return !map.isWall(checkCol, checkRow) && !map.isGhostHouseDoor(checkCol, checkRow);
     });
+
+    // Fallback if dead end: allow reversing direction
+    if (allowed.length === 0) {
+      return directions.filter(d => {
+        const checkCol = curTile.col + d.x;
+        const checkRow = curTile.row + d.y;
+        if (this.state === STATE_EATEN || this.state === STATE_HOUSE) {
+          if (map.isGhostHouseDoor(checkCol, checkRow) || map.grid[checkRow]?.[checkCol] === 5) return true;
+        }
+        return !map.isWall(checkCol, checkRow) && !map.isGhostHouseDoor(checkCol, checkRow);
+      });
+    }
+
+    return allowed;
   }
 
   update(map, pacman, blinky, globalMode) {
@@ -112,20 +154,18 @@ class Ghost {
       this.state = globalMode;
     }
 
-    const curSpeed = this.state === STATE_FRIGHTENED ? 1.0 : (this.state === STATE_EATEN ? 2.0 : this.speed);
+    const curSpeed = this.speed; // Uniform speed on grid
 
-    // Alignment check to decide tile turn
+    // Decision logic at tile intersection center
     const isAtTileCenter = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
 
     if (isAtTileCenter) {
       if (this.state === STATE_EATEN) {
         const myTile = this.getTile();
-        // Check if ghost has returned inside the ghost house
         if (myTile.col === 13 && (myTile.row === 14 || myTile.row === 13)) {
           this.x = 13 * TILE_SIZE;
           this.y = 14 * TILE_SIZE;
           this.state = STATE_HOUSE;
-          // Set house release timer to remaining powerup duration (or 0 if already expired)
           this.timer = Math.max(0, this.frightenedTimer);
           return;
         }
@@ -134,10 +174,8 @@ class Ghost {
       const validDirs = this.getValidDirections(map);
       if (validDirs.length > 0) {
         if (this.state === STATE_FRIGHTENED) {
-          // Random choice when frightened
           this.dir = validDirs[Math.floor(Math.random() * validDirs.length)];
         } else {
-          // Choose direction that minimizes distance to target
           const target = this.getTargetTile(pacman, blinky);
           let bestDir = validDirs[0];
           let minDistance = Infinity;
@@ -155,22 +193,27 @@ class Ghost {
           this.dir = bestDir;
         }
       }
-    } else if (this.state === STATE_EATEN) {
-      // Safety check for eaten eyes that aren't on an exact tile center:
-      // If continuing in current direction hits a wall or leaves the board, force recalculation
-      const checkNextCol = Math.floor((this.x + this.dir.x * curSpeed + 8) / TILE_SIZE);
-      const checkNextRow = Math.floor((this.y + this.dir.y * curSpeed + 8) / TILE_SIZE);
-      if (map.isWall(checkNextCol, checkNextRow)) {
-        this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
-        this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
+    }
+
+    // Attempt step forward
+    const nextX = this.x + this.dir.x * curSpeed;
+    const nextY = this.y + this.dir.y * curSpeed;
+
+    if (this.isValidGhostPosition(nextX, nextY, map)) {
+      this.x = nextX;
+      this.y = nextY;
+    } else {
+      // Hit a wall or corner obstruction: snap cleanly to tile and recalculate direction immediately
+      this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
+      this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
+
+      const validDirs = this.getValidDirections(map);
+      if (validDirs.length > 0) {
+        this.dir = validDirs[0];
       }
     }
 
-    // Move
-    this.x += this.dir.x * curSpeed;
-    this.y += this.dir.y * curSpeed;
-
-    // Tunnel Wrap & Bounds safety
+    // Tunnel Wrap
     if (this.x < -8) this.x = (MAP_COLS - 1) * TILE_SIZE;
     else if (this.x > (MAP_COLS - 0.5) * TILE_SIZE) this.x = -8;
   }
