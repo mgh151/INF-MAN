@@ -48,7 +48,7 @@ class Ghost {
 
   getTargetTile(pacman, blinky) {
     if (this.state === STATE_SCATTER) return this.scatterTarget;
-    if (this.state === STATE_EATEN) return { col: 13, row: 11 }; // Ghost House Entrance
+    if (this.state === STATE_EATEN) return { col: 13, row: 14 }; // Ghost House Center Inside
 
     const pacTile = pacman.getTile();
 
@@ -84,7 +84,7 @@ class Ghost {
       const nextRow = myTile.row + d.y;
 
       if (this.state === STATE_EATEN || this.state === STATE_HOUSE) {
-        if (map.isGhostHouseDoor(nextCol, nextRow)) return true;
+        if (map.isGhostHouseDoor(nextCol, nextRow) || map.grid[nextRow]?.[nextCol] === 5) return true;
       }
 
       return !map.isWall(nextCol, nextRow) && !map.isGhostHouseDoor(nextCol, nextRow);
@@ -94,7 +94,7 @@ class Ghost {
   update(map, pacman, blinky, globalMode) {
     if (this.state === STATE_HOUSE) {
       this.timer--;
-      if (this.timer <= 0) {
+      if (this.timer <= 0 && this.frightenedTimer <= 0) {
         this.x = 13 * TILE_SIZE;
         this.y = 11 * TILE_SIZE;
         this.state = globalMode;
@@ -120,8 +120,14 @@ class Ghost {
     if (isAtTileCenter) {
       if (this.state === STATE_EATEN) {
         const myTile = this.getTile();
-        if (myTile.col === 13 && (myTile.row === 11 || myTile.row === 12)) {
-          this.state = globalMode;
+        // Check if ghost has returned inside the ghost house
+        if (myTile.col === 13 && (myTile.row === 14 || myTile.row === 13)) {
+          this.x = 13 * TILE_SIZE;
+          this.y = 14 * TILE_SIZE;
+          this.state = STATE_HOUSE;
+          // Set house release timer to remaining powerup duration (or 0 if already expired)
+          this.timer = Math.max(0, this.frightenedTimer);
+          return;
         }
       }
 
