@@ -134,6 +134,11 @@ class Ghost {
   }
 
   update(map, pacman, blinky, globalMode) {
+    // Always decrement frightened timer if active
+    if (this.frightenedTimer > 0) {
+      this.frightenedTimer--;
+    }
+
     if (this.state === STATE_HOUSE) {
       this.timer--;
       if (this.timer <= 0 && this.frightenedTimer <= 0) {
@@ -146,7 +151,6 @@ class Ghost {
     }
 
     if (this.state === STATE_FRIGHTENED) {
-      this.frightenedTimer--;
       if (this.frightenedTimer <= 0) {
         this.state = globalMode;
       }
@@ -166,7 +170,9 @@ class Ghost {
       if (this.state === STATE_EATEN) {
         const myTile = this.getTile();
         if (myTile.col === 13 && (myTile.row === 14 || myTile.row === 13)) {
-          this.x = 13 * TILE_SIZE;
+          // Stagger ghost resting positions inside the house so they don't overlap
+          const houseOffsets = { blinky: 13.0, pinky: 12.0, inky: 13.5, clyde: 14.0 };
+          this.x = (houseOffsets[this.type] || 13) * TILE_SIZE;
           this.y = 14 * TILE_SIZE;
           this.state = STATE_HOUSE;
           this.timer = Math.max(0, this.frightenedTimer);
