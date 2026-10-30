@@ -112,7 +112,7 @@ class Ghost {
       this.state = globalMode;
     }
 
-    const curSpeed = this.state === STATE_FRIGHTENED ? 1.0 : (this.state === STATE_EATEN ? 4.0 : this.speed);
+    const curSpeed = this.state === STATE_FRIGHTENED ? 1.0 : (this.state === STATE_EATEN ? 2.0 : this.speed);
 
     // Alignment check to decide tile turn
     const isAtTileCenter = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
@@ -155,13 +155,22 @@ class Ghost {
           this.dir = bestDir;
         }
       }
+    } else if (this.state === STATE_EATEN) {
+      // Safety check for eaten eyes that aren't on an exact tile center:
+      // If continuing in current direction hits a wall or leaves the board, force recalculation
+      const checkNextCol = Math.floor((this.x + this.dir.x * curSpeed + 8) / TILE_SIZE);
+      const checkNextRow = Math.floor((this.y + this.dir.y * curSpeed + 8) / TILE_SIZE);
+      if (map.isWall(checkNextCol, checkNextRow)) {
+        this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
+        this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
+      }
     }
 
     // Move
     this.x += this.dir.x * curSpeed;
     this.y += this.dir.y * curSpeed;
 
-    // Tunnel Wrap
+    // Tunnel Wrap & Bounds safety
     if (this.x < -8) this.x = (MAP_COLS - 1) * TILE_SIZE;
     else if (this.x > (MAP_COLS - 0.5) * TILE_SIZE) this.x = -8;
   }
