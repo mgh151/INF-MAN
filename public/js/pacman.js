@@ -121,9 +121,36 @@ class PacMan {
 
     const customImg = AssetManager.images.pacman;
     if (AssetManager.customAssets.pacman && customImg && customImg.complete && customImg.naturalWidth !== 0) {
-      // Draw uploaded custom image, rotated to match direction
-      ctx.rotate(this.dir.angle);
-      ctx.drawImage(customImg, -10, -10, 20, 20);
+      // South Park style flapping head mouth animation for custom image (Upright, no rotation)
+      const w = 22;
+      const h = 22;
+      const hw = w / 2;
+      const hh = h / 2;
+
+      // Calculate mouth gap distance in pixels (0 to ~8px) based on mouthAngle animation
+      const mouthGap = Math.sin((this.mouthAngle - this.mouthMin) / (this.mouthMax - this.mouthMin) * Math.PI) * 7;
+
+      ctx.save();
+      // 1. Top half of custom head image (top 50% sliced across middle)
+      ctx.beginPath();
+      ctx.rect(-hw, -hh, w, hh);
+      ctx.clip();
+      ctx.drawImage(customImg, -hw, -hh - mouthGap / 2, w, h);
+      ctx.restore();
+
+      ctx.save();
+      // 2. Bottom half of custom head image (bottom 50% sliced across middle)
+      ctx.beginPath();
+      ctx.rect(-hw, 0, w, hh);
+      ctx.clip();
+      ctx.drawImage(customImg, -hw, -hh + mouthGap / 2, w, h);
+      ctx.restore();
+
+      // Black inner mouth opening background behind the flap
+      if (mouthGap > 1) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(-hw + 2, -mouthGap / 2, w - 4, mouthGap);
+      }
     } else {
       // Draw classic mouth-animating yellow Pac-Man
       ctx.rotate(this.dir.angle);
