@@ -86,7 +86,7 @@ class Game {
           if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
-              AssetManager.setCustomAsset(key, event.target.result);
+              AssetManager.addAndSelectCustomAsset(key, event.target.result);
               this.updateModalPreviews();
             };
             reader.readAsDataURL(file);
@@ -101,7 +101,54 @@ class Game {
     keys.forEach(key => {
       const img = document.getElementById(`preview-${key}`);
       if (img) {
-        img.src = AssetManager.customAssets[key] || AssetManager.images[key].src;
+        img.src = AssetManager.customAssets[key] || AssetManager.createDefaultCanvasImage(key).src;
+      }
+
+      // Render gallery library selector
+      const galleryContainer = document.getElementById(`gallery-${key}`);
+      if (galleryContainer) {
+        galleryContainer.innerHTML = '';
+
+        // Option 1: Default Canvas Image
+        const defaultThumb = document.createElement('div');
+        defaultThumb.className = `gallery-thumb ${!AssetManager.customAssets[key] ? 'selected' : ''}`;
+        const defaultImg = document.createElement('img');
+        defaultImg.src = AssetManager.createDefaultCanvasImage(key).src;
+        defaultThumb.appendChild(defaultImg);
+        defaultThumb.onclick = () => {
+          AssetManager.clearCustomAsset(key);
+          this.updateModalPreviews();
+        };
+        galleryContainer.appendChild(defaultThumb);
+
+        // Option N: Uploaded Gallery Images
+        const savedList = AssetManager.gallery[key] || [];
+        savedList.forEach(dataUrl => {
+          const thumb = document.createElement('div');
+          thumb.className = `gallery-thumb ${AssetManager.customAssets[key] === dataUrl ? 'selected' : ''}`;
+          
+          const thumbImg = document.createElement('img');
+          thumbImg.src = dataUrl;
+          thumb.appendChild(thumbImg);
+
+          // Delete button on thumbnail
+          const delBtn = document.createElement('span');
+          delBtn.className = 'thumb-del';
+          delBtn.innerHTML = '&times;';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            AssetManager.removeAssetFromGallery(key, dataUrl);
+            this.updateModalPreviews();
+          };
+          thumb.appendChild(delBtn);
+
+          thumb.onclick = () => {
+            AssetManager.selectAsset(key, dataUrl);
+            this.updateModalPreviews();
+          };
+
+          galleryContainer.appendChild(thumb);
+        });
       }
     });
   }

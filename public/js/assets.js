@@ -1,5 +1,6 @@
-// Asset Manager for Default & Custom Images
+// Asset Manager with Saved Gallery & Selection Support
 const AssetManager = {
+  // Currently active selected assets (dataUrl or null for default)
   customAssets: {
     pacman: null,
     blinky: null,
@@ -8,6 +9,17 @@ const AssetManager = {
     clyde: null,
     frightened: null,
     fruit: null
+  },
+
+  // Saved image gallery library per category: { pacman: [dataUrl1, dataUrl2], blinky: [...], ... }
+  gallery: {
+    pacman: [],
+    blinky: [],
+    pinky: [],
+    inky: [],
+    clyde: [],
+    frightened: [],
+    fruit: []
   },
 
   images: {
@@ -27,9 +39,13 @@ const AssetManager = {
 
   loadFromStorage() {
     try {
-      const stored = localStorage.getItem('infman_custom_assets');
-      if (stored) {
-        this.customAssets = JSON.parse(stored);
+      const storedActive = localStorage.getItem('infman_custom_assets');
+      if (storedActive) {
+        this.customAssets = JSON.parse(storedActive);
+      }
+      const storedGallery = localStorage.getItem('infman_asset_gallery');
+      if (storedGallery) {
+        this.gallery = JSON.parse(storedGallery);
       }
     } catch (e) {
       console.warn('Failed to load custom assets from storage:', e);
@@ -39,13 +55,36 @@ const AssetManager = {
   saveToStorage() {
     try {
       localStorage.setItem('infman_custom_assets', JSON.stringify(this.customAssets));
+      localStorage.setItem('infman_asset_gallery', JSON.stringify(this.gallery));
     } catch (e) {
       console.warn('Failed to save custom assets to storage:', e);
     }
   },
 
-  setCustomAsset(key, dataUrl) {
+  addAndSelectCustomAsset(key, dataUrl) {
+    if (!this.gallery[key]) this.gallery[key] = [];
+    // Avoid duplicate entries in gallery
+    if (!this.gallery[key].includes(dataUrl)) {
+      this.gallery[key].push(dataUrl);
+    }
     this.customAssets[key] = dataUrl;
+    this.saveToStorage();
+    this.updateImage(key);
+  },
+
+  selectAsset(key, dataUrl) {
+    this.customAssets[key] = dataUrl;
+    this.saveToStorage();
+    this.updateImage(key);
+  },
+
+  removeAssetFromGallery(key, dataUrl) {
+    if (this.gallery[key]) {
+      this.gallery[key] = this.gallery[key].filter(url => url !== dataUrl);
+    }
+    if (this.customAssets[key] === dataUrl) {
+      this.customAssets[key] = null;
+    }
     this.saveToStorage();
     this.updateImage(key);
   },
@@ -127,7 +166,6 @@ const AssetManager = {
       ctx.beginPath();
       ctx.arc(16, 12, 12, Math.PI, 0, false);
       ctx.lineTo(28, 26);
-      // Wavy bottom
       ctx.lineTo(24, 22);
       ctx.lineTo(20, 26);
       ctx.lineTo(16, 22);
@@ -152,7 +190,7 @@ const AssetManager = {
       ctx.lineTo(24, 20);
       ctx.stroke();
     } else {
-      // Ghosts: blinky (#ff0000), pinky (#ffb8ff), inky (#00ffff), clyde (#ffb852)
+      // Ghosts
       const colors = {
         blinky: '#ff0000',
         pinky: '#ffb8ff',
@@ -179,7 +217,7 @@ const AssetManager = {
       ctx.arc(21, 11, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // Blue pupils (looking forward)
+      // Blue pupils
       ctx.fillStyle = '#0000ff';
       ctx.beginPath();
       ctx.arc(12, 11, 2, 0, Math.PI * 2);
