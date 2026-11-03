@@ -1,4 +1,4 @@
-// Fruit Bonus Item Class with Classic Level Progression
+// Fruit Bonus Item Class with Ms. Pac-Man Bouncing Path Movement
 const FRUIT_TYPES = [
   { name: 'Cherry', points: 100, color: '#ff0033' },
   { name: 'Strawberry', points: 300, color: '#ff3366' },
@@ -12,12 +12,17 @@ const FRUIT_TYPES = [
 
 class Fruit {
   constructor() {
-    this.x = 13 * TILE_SIZE; // Tile (13, 17) spawn below ghost house
-    this.y = 17 * TILE_SIZE;
     this.active = false;
     this.timer = 0;
     this.points = 100;
     this.currentFruit = FRUIT_TYPES[0];
+
+    this.x = 0;
+    this.y = 14 * TILE_SIZE;
+    this.speed = 1.0;
+    this.dir = DIR_RIGHT;
+    this.bounceOffset = 0;
+    this.bounceTimer = 0;
   }
 
   getFruitForLevel(level) {
@@ -31,27 +36,98 @@ class Fruit {
     return FRUIT_TYPES[7]; // Key (5000) for Level 13+
   }
 
-  spawn(level) {
-    this.active = true;
-    this.timer = 600; // Active for ~10 seconds at 60 FPS
-    this.currentFruit = this.getFruitForLevel(level);
-    this.points = this.currentFruit.points;
+  getTile() {
+    return {
+      col: Math.floor((this.x + 8) / TILE_SIZE),
+      row: Math.floor((this.y + 8) / TILE_SIZE)
+    };
   }
 
-  update() {
-    if (this.active) {
-      this.timer--;
-      if (this.timer <= 0) {
+  spawn(level) {
+    this.active = true;
+    this.timer = 1200; // Active for up to ~20 seconds as it wanders
+    this.currentFruit = this.getFruitForLevel(level);
+    this.points = this.currentFruit.points;
+
+    // Spawn at left tunnel entrance (col -1, row 14)
+    this.x = -1 * TILE_SIZE;
+    this.y = 14 * TILE_SIZE;
+    this.dir = DIR_RIGHT;
+    this.bounceTimer = 0;
+  }
+
+  getValidDirections(map) {
+    const directions = [DIR_UP, DIR_LEFT, DIR_DOWN, DIR_RIGHT];
+    const curTile = this.getTile();
+
+    const allowed = directions.filter(d => {
+      // Don't reverse direction 180deg unless dead end
+      if (d.x === -this.dir.x && d.y === -this.dir.y) return false;
+
+      const checkCol = curTile.col + d.x;
+      const checkRow = curTile.row + d.y;
+
+      // Allow tunnel
+      if (checkCol < 0 || checkCol >= MAP_COLS) return true;
+
+      // Fruit cannot enter ghost house
+      return !map.isWall(checkCol, checkRow) && !map.isGhostHouseDoor(checkCol, checkRow) && map.grid[checkRow]?.[checkCol] !== 5;
+    });
+
+    if (allowed.length === 0) {
+      return directions.filter(d => {
+        const checkCol = curTile.col + d.x;
+        const checkRow = curTile.row + d.y;
+        if (checkCol < 0 || checkCol >= MAP_COLS) return true;
+        return !map.isWall(checkCol, checkRow) && !map.isGhostHouseDoor(checkCol, checkRow) && map.grid[checkRow]?.[checkCol] !== 5;
+      });
+    }
+
+    return allowed;
+  }
+
+  update(map) {
+    if (!this.active) return;
+
+    this.timer--;
+    if (this.timer <= 0) {
+      this.active = false;
+      return;
+    }
+
+    // Ms. Pac-Man style bouncing animation
+    this.bounceTimer += 0.2;
+    this.bounceOffset = Math.abs(Math.sin(this.bounceTimer)) * -4;
+
+    // Path decision at tile center
+    const isAtTileCenter = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
+
+    if (isAtTileCenter) {
+      const curTile = this.getTile();
+      // If fruit wanders across to right tunnel exit, exit active state
+      if (curTile.col >= MAP_COLS && this.dir.x > 0) {
         this.active = false;
+        return;
+      }
+
+      const validDirs = this.getValidDirections(map);
+      if (validDirs.length > 0) {
+        // Random wander pathing through maze intersections
+        this.dir = validDirs[Math.floor(Math.random() * validDirs.length)];
       }
     }
+
+    // Step forward
+    this.x += this.dir.x * this.speed;
+    this.y += this.dir.y * this.speed;
   }
 
   draw(ctx) {
     if (!this.active) return;
 
     ctx.save();
-    ctx.translate(this.x + 8, this.y + 8);
+    // Render at current position with bouncing offset
+    ctx.translate(this.x + 8, this.y + 8 + this.bounceOffset);
 
     const customImg = AssetManager.images.fruit;
     if (AssetManager.customAssets.fruit && customImg && customImg.complete && customImg.naturalWidth !== 0) {

@@ -333,10 +333,9 @@ class Game {
 
     // Check Fruit collision
     if (this.fruit.active) {
-      this.fruit.update();
-      const fruitCol = 13;
-      const fruitRow = 17;
-      if (pacTile.col === fruitCol && pacTile.row === fruitRow) {
+      this.fruit.update(this.map);
+      const fruitTile = this.fruit.getTile();
+      if (pacTile.col === fruitTile.col && pacTile.row === fruitTile.row) {
         this.score += this.fruit.points;
         this.fruit.active = false;
         AudioEngine.playEatFruit();
