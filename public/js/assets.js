@@ -1,4 +1,4 @@
-// Asset Manager with Saved Gallery & Selection Support
+// Asset Manager with Saved Gallery & Mouth Cut Line Support
 const AssetManager = {
   // Currently active selected assets (dataUrl or null for default)
   customAssets: {
@@ -10,6 +10,9 @@ const AssetManager = {
     frightened: null,
     fruit: null
   },
+
+  // Custom mouth cut line position (0.0 to 1.0 ratio from top of image, default 0.5)
+  mouthCutLine: 0.5,
 
   // Saved image gallery library per category: { pacman: [dataUrl1, dataUrl2], blinky: [...], ... }
   gallery: {
@@ -47,6 +50,10 @@ const AssetManager = {
       if (storedGallery) {
         this.gallery = JSON.parse(storedGallery);
       }
+      const storedCutLine = localStorage.getItem('infman_mouth_cut_line');
+      if (storedCutLine !== null) {
+        this.mouthCutLine = parseFloat(storedCutLine);
+      }
     } catch (e) {
       console.warn('Failed to load custom assets from storage:', e);
     }
@@ -56,9 +63,15 @@ const AssetManager = {
     try {
       localStorage.setItem('infman_custom_assets', JSON.stringify(this.customAssets));
       localStorage.setItem('infman_asset_gallery', JSON.stringify(this.gallery));
+      localStorage.setItem('infman_mouth_cut_line', this.mouthCutLine.toString());
     } catch (e) {
       console.warn('Failed to save custom assets to storage:', e);
     }
+  },
+
+  setMouthCutLine(ratio) {
+    this.mouthCutLine = Math.max(0.1, Math.min(0.9, ratio));
+    this.saveToStorage();
   },
 
   addAndSelectCustomAsset(key, dataUrl) {

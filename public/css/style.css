@@ -262,8 +262,8 @@ canvas {
 }
 
 .preview-box {
-  width: 48px;
-  height: 48px;
+  width: 120px;
+  height: 120px;
   background: #000;
   border: 1px dashed #555;
   border-radius: 4px;
@@ -271,6 +271,22 @@ canvas {
   justify-content: center;
   align-items: center;
   margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-box canvas {
+  width: 120px;
+  height: 120px;
+  cursor: ns-resize;
+  display: block;
+}
+
+.cut-hint {
+  font-size: 7px;
+  color: #ffff00;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
 .preview-box img {

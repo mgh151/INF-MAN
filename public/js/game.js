@@ -34,6 +34,7 @@ class Game {
     this.initUI();
     this.initInput();
     this.initCustomModal();
+    this.initCutCanvas();
 
     AssetManager.init();
     this.updateScoreUI();
@@ -96,8 +97,93 @@ class Game {
     });
   }
 
+  initCutCanvas() {
+    const canvas = document.getElementById('canvas-cut-pacman');
+    if (!canvas) return;
+
+    let isDragging = false;
+
+    const setCut = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const y = clientY - rect.top;
+      const ratio = y / rect.height;
+      AssetManager.setMouthCutLine(ratio);
+      this.drawCutCanvas();
+    };
+
+    canvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      setCut(e);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) setCut(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      setCut(e);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (isDragging) setCut(e);
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+  }
+
+  drawCutCanvas() {
+    const canvas = document.getElementById('canvas-cut-pacman');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, w, h);
+
+    const img = AssetManager.images.pacman;
+    if (img && img.complete && img.naturalWidth !== 0) {
+      // Draw image scaled to canvas
+      ctx.drawImage(img, 10, 10, w - 20, h - 20);
+    } else {
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, w / 2 - 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw horizontal cut line overlay
+    const cutY = (AssetManager.mouthCutLine || 0.5) * h;
+
+    // Red dashed line with yellow handles
+    ctx.strokeStyle = '#ff0055';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, cutY);
+    ctx.lineTo(w, cutY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Line drag handle indicators
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(0, cutY - 4, 10, 8);
+    ctx.fillRect(w - 10, cutY - 4, 10, 8);
+  }
+
   updateModalPreviews() {
-    const keys = ['pacman', 'blinky', 'pinky', 'inky', 'clyde', 'frightened', 'fruit'];
+    this.drawCutCanvas();
+
+    const keys = ['blinky', 'pinky', 'inky', 'clyde', 'frightened', 'fruit'];
     keys.forEach(key => {
       const img = document.getElementById(`preview-${key}`);
       if (img) {

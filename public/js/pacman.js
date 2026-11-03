@@ -121,27 +121,31 @@ class PacMan {
 
     const customImg = AssetManager.images.pacman;
     if (AssetManager.customAssets.pacman && customImg && customImg.complete && customImg.naturalWidth !== 0) {
-      // South Park style flapping head mouth animation for custom image (Upright, no rotation)
+      // South Park style flapping head mouth animation using custom user cut line
       const w = 22;
       const h = 22;
       const hw = w / 2;
       const hh = h / 2;
 
+      const cutRatio = AssetManager.mouthCutLine || 0.5;
+      const topHeight = h * cutRatio;
+      const bottomHeight = h * (1 - cutRatio);
+
       // Calculate mouth gap distance in pixels (0 to ~8px) based on mouthAngle animation
       const mouthGap = Math.sin((this.mouthAngle - this.mouthMin) / (this.mouthMax - this.mouthMin) * Math.PI) * 7;
 
       ctx.save();
-      // 1. Top half of custom head image (top 50% sliced across middle)
+      // 1. Top portion of custom head image (sliced above cut line)
       ctx.beginPath();
-      ctx.rect(-hw, -hh, w, hh);
+      ctx.rect(-hw, -hh, w, topHeight);
       ctx.clip();
       ctx.drawImage(customImg, -hw, -hh - mouthGap / 2, w, h);
       ctx.restore();
 
       ctx.save();
-      // 2. Bottom half of custom head image (bottom 50% sliced across middle)
+      // 2. Bottom portion of custom head image (sliced below cut line)
       ctx.beginPath();
-      ctx.rect(-hw, 0, w, hh);
+      ctx.rect(-hw, -hh + topHeight, w, bottomHeight);
       ctx.clip();
       ctx.drawImage(customImg, -hw, -hh + mouthGap / 2, w, h);
       ctx.restore();
@@ -149,7 +153,7 @@ class PacMan {
       // Black inner mouth opening background behind the flap
       if (mouthGap > 1) {
         ctx.fillStyle = '#000000';
-        ctx.fillRect(-hw + 2, -mouthGap / 2, w - 4, mouthGap);
+        ctx.fillRect(-hw + 2, -hh + topHeight - mouthGap / 2, w - 4, mouthGap);
       }
     } else {
       // Draw classic mouth-animating yellow Pac-Man
