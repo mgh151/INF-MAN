@@ -121,7 +121,7 @@ class PacMan {
 
     const customImg = AssetManager.images.pacman;
     if (AssetManager.customAssets.pacman && customImg && customImg.complete && customImg.naturalWidth !== 0) {
-      // South Park style flapping head mouth animation using custom user cut line
+      // South Park style teeter-totter flapping head mouth animation
       const w = 22;
       const h = 22;
       const hw = w / 2;
@@ -131,29 +131,46 @@ class PacMan {
       const topHeight = h * cutRatio;
       const bottomHeight = h * (1 - cutRatio);
 
-      // Calculate mouth gap distance in pixels (0 to ~8px) based on mouthAngle animation
-      const mouthGap = Math.sin((this.mouthAngle - this.mouthMin) / (this.mouthMax - this.mouthMin) * Math.PI) * 7;
+      // Normalized mouth cycle phase (0.0 to 1.0)
+      const mouthNorm = (this.mouthAngle - this.mouthMin) / (this.mouthMax - this.mouthMin);
 
+      // Mouth gap height
+      const mouthGap = Math.sin(mouthNorm * Math.PI) * 6;
+
+      // Teeter-totter rotational angle (tilts up to ±14 degrees as mouth opens)
+      const teeterAngle = Math.sin(mouthNorm * Math.PI) * 0.24;
+
+      // Pivot point along user cut line
+      const cutY = -hh + topHeight;
+
+      // 1. Top Portion of Head (Rotates/Tilts upward on pivot cut line)
       ctx.save();
-      // 1. Top portion of custom head image (sliced above cut line)
+      ctx.translate(0, cutY);
+      ctx.rotate(-teeterAngle);
+      ctx.translate(0, -cutY);
+
       ctx.beginPath();
-      ctx.rect(-hw, -hh, w, topHeight);
+      ctx.rect(-hw - 5, -hh - 10, w + 10, topHeight + 10);
       ctx.clip();
       ctx.drawImage(customImg, -hw, -hh - mouthGap / 2, w, h);
       ctx.restore();
 
+      // 2. Bottom Portion of Head (Rotates/Tilts downward on pivot cut line)
       ctx.save();
-      // 2. Bottom portion of custom head image (sliced below cut line)
+      ctx.translate(0, cutY);
+      ctx.rotate(teeterAngle * 0.5);
+      ctx.translate(0, -cutY);
+
       ctx.beginPath();
-      ctx.rect(-hw, -hh + topHeight, w, bottomHeight);
+      ctx.rect(-hw - 5, cutY, w + 10, bottomHeight + 10);
       ctx.clip();
       ctx.drawImage(customImg, -hw, -hh + mouthGap / 2, w, h);
       ctx.restore();
 
-      // Black inner mouth opening background behind the flap
+      // Dark mouth interior gap
       if (mouthGap > 1) {
         ctx.fillStyle = '#000000';
-        ctx.fillRect(-hw + 2, -hh + topHeight - mouthGap / 2, w - 4, mouthGap);
+        ctx.fillRect(-hw + 2, cutY - mouthGap / 2, w - 4, mouthGap);
       }
     } else {
       // Draw classic mouth-animating yellow Pac-Man
