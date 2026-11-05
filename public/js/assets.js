@@ -44,16 +44,26 @@ const AssetManager = {
     try {
       const storedActive = localStorage.getItem('infman_custom_assets');
       if (storedActive) {
-        this.customAssets = JSON.parse(storedActive);
+        this.customAssets = { ...this.customAssets, ...JSON.parse(storedActive) };
       }
       const storedGallery = localStorage.getItem('infman_asset_gallery');
       if (storedGallery) {
-        this.gallery = JSON.parse(storedGallery);
+        this.gallery = { ...this.gallery, ...JSON.parse(storedGallery) };
       }
       const storedCutLine = localStorage.getItem('infman_mouth_cut_line');
       if (storedCutLine !== null) {
         this.mouthCutLine = parseFloat(storedCutLine);
       }
+
+      // Auto-migrate: Ensure any active selected custom assets exist in gallery library
+      const keys = ['pacman', 'blinky', 'pinky', 'inky', 'clyde', 'frightened', 'fruit'];
+      keys.forEach(k => {
+        if (!this.gallery[k]) this.gallery[k] = [];
+        if (this.customAssets[k] && !this.gallery[k].includes(this.customAssets[k])) {
+          this.gallery[k].push(this.customAssets[k]);
+        }
+      });
+      this.saveToStorage();
     } catch (e) {
       console.warn('Failed to load custom assets from storage:', e);
     }
@@ -118,6 +128,7 @@ const AssetManager = {
       frightened: null,
       fruit: null
     };
+    // Note: Do not erase this.gallery so user library uploads are preserved across resets
     this.saveToStorage();
     this.generateDefaultImages();
   },
