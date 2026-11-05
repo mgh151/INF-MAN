@@ -1,4 +1,4 @@
-// Web Audio API Retro Sound Effects Synthesizer
+// Web Audio API Retro Sound Effects Synthesizer with Audio Node Garbage Collection
 const AudioEngine = {
   ctx: null,
   enabled: true,
@@ -33,6 +33,12 @@ const AudioEngine = {
 
     osc.start(now);
     osc.stop(now + 0.05);
+
+    // Clean disconnect to free memory
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   },
 
   playPowerPellet() {
@@ -53,6 +59,11 @@ const AudioEngine = {
 
     osc.start(now);
     osc.stop(now + 0.15);
+
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   },
 
   playEatGhost() {
@@ -75,6 +86,11 @@ const AudioEngine = {
 
     osc.start(now);
     osc.stop(now + 0.3);
+
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   },
 
   playEatFruit() {
@@ -95,6 +111,11 @@ const AudioEngine = {
 
     osc.start(now);
     osc.stop(now + 0.25);
+
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   },
 
   playDeath() {
@@ -115,5 +136,10 @@ const AudioEngine = {
 
     osc.start(now);
     osc.stop(now + 0.8);
+
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
   }
 };

@@ -1,0 +1,15 @@
+[Unit]
+Description=INF-MAN Pac-Man Game Node Server
+After=network.target
+
+[Service]
+Type=simple
+User=mgh151
+WorkingDirectory=/home/mgh151/INF-MAN
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target
